@@ -16,12 +16,26 @@ cd "$(dirname "$0")"
 echo "==> Deploying Gesture from: $(pwd)"
 
 # 1. PHP dependencies (production, no dev packages)
-echo "==> [1/7] composer install"
+echo "==> [1/8] composer install"
 COMPOSER_MEMORY_LIMIT=-1 composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
+
+# 1b. Ensure Laravel's writable storage skeleton exists.
+# storage/framework is gitignored, so a fresh clone/deploy has no cache/views dirs
+# and Blade compilation fails with "Please provide a valid cache path."
+echo "==> [2/8] ensuring storage + bootstrap/cache directories"
+mkdir -p \
+    storage/framework/cache/data \
+    storage/framework/sessions \
+    storage/framework/views \
+    storage/framework/testing \
+    storage/logs \
+    storage/app/public \
+    bootstrap/cache
+chmod -R ug+rw storage bootstrap/cache 2>/dev/null || true
 
 # 2. First-run env bootstrap — never overwrites an existing .env
 if [ ! -f .env ]; then
-    echo "==> [2/7] .env not found — creating from .env.example"
+    echo "==> [3/8] .env not found — creating from .env.example"
     cp .env.example .env
     php artisan key:generate --force
     echo ""
@@ -39,26 +53,26 @@ fi
 
 # 3. Generate an app key if one is somehow missing (encrypted fields depend on it)
 if ! grep -q '^APP_KEY=base64:' .env; then
-    echo "==> [3/7] APP_KEY missing — generating"
+    echo "==> [4/8] APP_KEY missing — generating"
     php artisan key:generate --force
 else
-    echo "==> [3/7] APP_KEY present — keeping existing key"
+    echo "==> [4/8] APP_KEY present — keeping existing key"
 fi
 
 # 4. Public storage symlink (idempotent)
-echo "==> [4/7] storage:link"
+echo "==> [5/8] storage:link"
 php artisan storage:link 2>/dev/null || true
 
 # 5. Database migrations (non-interactive)
-echo "==> [5/7] migrate --force"
+echo "==> [6/8] migrate --force"
 php artisan migrate --force
 
 # 6. Writable permissions for runtime dirs
-echo "==> [6/7] fixing storage / bootstrap cache permissions"
+echo "==> [7/8] fixing storage / bootstrap cache permissions"
 chmod -R ug+rw storage bootstrap/cache 2>/dev/null || true
 
 # 7. Rebuild framework caches (clear stale config first, then optimize)
-echo "==> [7/7] rebuilding caches"
+echo "==> [8/8] rebuilding caches"
 php artisan optimize:clear
 php artisan optimize
 
