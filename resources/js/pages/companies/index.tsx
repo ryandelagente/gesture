@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Filter, Search, Plus, Eye, Edit, Trash2, KeyRound, Lock, Unlock, LayoutGrid, List, ExternalLink, Info, ArrowUpRight, CreditCard } from 'lucide-react';
+import { Filter, Search, Plus, Eye, Edit, Trash2, KeyRound, Lock, Unlock, LayoutGrid, List, ExternalLink, Info, ArrowUpRight, CreditCard, Sparkles } from 'lucide-react';
 import { toast } from '@/components/custom-toast';
 import { useInitials } from '@/hooks/use-initials';
 import { useTranslation } from 'react-i18next';
@@ -189,6 +189,9 @@ export default function Companies() {
       case 'toggle-status':
         handleToggleStatus(company);
         break;
+      case 'toggle-agency':
+        handleToggleAgency(company);
+        break;
       case 'edit':
         setFormMode('edit');
         setIsFormModalOpen(true);
@@ -295,9 +298,27 @@ export default function Companies() {
     });
   };
   
+  const handleToggleAgency = (company: any) => {
+    toast.loading(t('Updating agency mode...'));
+
+    router.put(route('companies.toggle-agency-mode', company.id), {}, {
+      preserveScroll: true,
+      onSuccess: () => {
+        toast.dismiss();
+        if (flash?.success) {
+          toast.success(flash.success);
+        }
+      },
+      onError: () => {
+        toast.dismiss();
+        toast.error(t('Failed to update agency mode'));
+      }
+    });
+  };
+
   const handleToggleStatus = (company: any) => {
     toast.loading(t('Updating status...'));
-    
+
     router.put(route('companies.toggle-status', company.id), {}, {
       onSuccess: () => {
         toast.dismiss();
@@ -851,11 +872,15 @@ export default function Companies() {
                           <span>{t("Reset Password")}</span>
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleAction('toggle-status', company)}>
-                          {company.status === 'active' ? 
-                            <Lock className="h-4 w-4 mr-2" /> : 
+                          {company.status === 'active' ?
+                            <Lock className="h-4 w-4 mr-2" /> :
                             <Unlock className="h-4 w-4 mr-2" />
                           }
                           <span>{company.status === 'active' ? t("Disable Login") : t("Enable Login")}</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleAction('toggle-agency', company)} className={company.is_agency_mode ? 'text-emerald-600' : ''}>
+                          <Sparkles className="h-4 w-4 mr-2" />
+                          <span>{company.is_agency_mode ? t("Disable Agency Mode") : t("Enable Agency Mode")}</span>
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={() => handleAction('edit', company)} className="text-amber-600">

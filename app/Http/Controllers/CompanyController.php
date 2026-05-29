@@ -62,6 +62,7 @@ class CompanyController extends Controller
                 'created_at' => $company->created_at,
                 'plan_name' => $company->plan ? $company->plan->name : __('No Plan'),
                 'plan_expiry_date' => $company->plan_expire_date,
+                'is_agency_mode' => (bool) Workspace::where('owner_id', $company->id)->value('is_agency_mode'),
             ];
         });
         
@@ -201,7 +202,25 @@ class CompanyController extends Controller
         
         return redirect()->back()->with('success', __('Company status updated successfully'));
     }
-    
+
+    /**
+     * Toggle agency mode for all workspaces owned by this company.
+     * Agency mode unlocks the digital-agency features (site credentials,
+     * GA4/GSC/GBP integrations, bug widget, onboarding, monthly reports).
+     */
+    public function toggleAgencyMode(User $company)
+    {
+        if ($company->type !== 'company') {
+            return redirect()->back()->with('error', __('Invalid company record'));
+        }
+
+        $current = (bool) Workspace::where('owner_id', $company->id)->value('is_agency_mode');
+        $new = !$current;
+        Workspace::where('owner_id', $company->id)->update(['is_agency_mode' => $new]);
+
+        return redirect()->back()->with('success', __($new ? 'Agency mode enabled' : 'Agency mode disabled'));
+    }
+
     /**
      * Get available plans for upgrade
      */

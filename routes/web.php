@@ -346,6 +346,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::delete('companies/{company}', [CompanyController::class, 'destroy'])->middleware('permission:company_delete')->name('companies.destroy');
             Route::put('companies/{company}/reset-password', [CompanyController::class, 'resetPassword'])->middleware('permission:company_reset_password')->name('companies.reset-password');
             Route::put('companies/{company}/toggle-status', [CompanyController::class, 'toggleStatus'])->middleware('permission:company_toggle_status')->name('companies.toggle-status');
+            Route::put('companies/{company}/toggle-agency-mode', [CompanyController::class, 'toggleAgencyMode'])->middleware('permission:company_update')->name('companies.toggle-agency-mode');
             Route::get('companies/{company}/plans', [CompanyController::class, 'getPlans'])->middleware('permission:company_manage_plans')->name('companies.plans');
             Route::put('companies/{company}/upgrade-plan', [CompanyController::class, 'upgradePlan'])->middleware('permission:company_upgrade_plan')->name('companies.upgrade-plan');
         });
