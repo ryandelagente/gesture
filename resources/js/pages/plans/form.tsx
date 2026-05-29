@@ -27,6 +27,7 @@ interface Plan {
   max_projects_per_workspace: number;
   storage_limit: number;
   enable_chatgpt: string;
+  enable_agency_mode: string;
   themes: string[] | null;
   is_trial: string | null;
   trial_day: number;
@@ -58,6 +59,7 @@ export default function PlanForm({ plan, hasDefaultPlan = false, otherDefaultPla
     workspace_limit: plan?.workspace_limit || 1,
     storage_limit: plan?.storage_limit || 0,
     enable_chatgpt: plan?.enable_chatgpt || 'off',
+    enable_agency_mode: plan?.enable_agency_mode || 'off',
     is_trial: plan?.is_trial || null,
     trial_day: plan?.trial_day || 0,
     is_plan_enable: plan?.is_plan_enable || 'on',
@@ -259,7 +261,21 @@ export default function PlanForm({ plan, hasDefaultPlan = false, otherDefaultPla
                   onCheckedChange={(checked) => handleSwitchChange('enable_chatgpt', checked)}
                 />
               </div>
-              
+
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label htmlFor="enable_agency_mode">{t("Agency Mode")}</Label>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {t("Unlocks digital-agency features: site credentials, GA4/GSC/GBP, bug widget, onboarding, monthly reports.")}
+                  </p>
+                </div>
+                <Switch
+                  id="enable_agency_mode"
+                  checked={formData.enable_agency_mode === 'on'}
+                  onCheckedChange={(checked) => handleSwitchChange('enable_agency_mode', checked)}
+                />
+              </div>
+
               <div className="flex items-center justify-between">
                 <Label htmlFor="is_trial">{t("Enable Trial")}</Label>
                 <Switch

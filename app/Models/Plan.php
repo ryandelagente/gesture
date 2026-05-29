@@ -18,6 +18,7 @@ class Plan extends Model
         'max_projects_per_workspace',
         'workspace_limit',
         'enable_chatgpt',
+        'enable_agency_mode',
         'storage_limit',
         'is_trial',
         'trial_day',

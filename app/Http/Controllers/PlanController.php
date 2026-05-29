@@ -136,28 +136,30 @@ class PlanController extends Controller
             'workspace_limit' => 'required|integer|min:1',
             'storage_limit' => 'required|numeric|min:0',
             'enable_chatgpt' => 'nullable|in:on,off',
+            'enable_agency_mode' => 'nullable|in:on,off',
             'is_trial' => 'nullable|in:on,off',
             'trial_day' => 'nullable|integer|min:0',
             'is_plan_enable' => 'nullable|in:on,off',
             'is_default' => 'nullable|boolean',
         ]);
-        
+
         // Set default values for nullable fields
         $validated['enable_chatgpt'] = $validated['enable_chatgpt'] ?? 'off';
+        $validated['enable_agency_mode'] = $validated['enable_agency_mode'] ?? 'off';
         $validated['is_trial'] = $validated['is_trial'] ?? null;
         $validated['is_plan_enable'] = $validated['is_plan_enable'] ?? 'on';
         $validated['is_default'] = $validated['is_default'] ?? false;
-        
+
         // If yearly_price is not provided, calculate it as 80% of monthly price * 12
         if (!isset($validated['yearly_price']) || $validated['yearly_price'] === null) {
             $validated['yearly_price'] = $validated['price'] * 12 * 0.8;
         }
-        
+
         // If this plan is set as default, remove default status from other plans
         if ($validated['is_default']) {
             Plan::where('is_default', true)->update(['is_default' => false]);
         }
-        
+
         // Create the plan
         Plan::create($validated);
         
@@ -201,14 +203,16 @@ class PlanController extends Controller
             'workspace_limit' => 'required|integer|min:1',
             'storage_limit' => 'required|numeric|min:0',
             'enable_chatgpt' => 'nullable|in:on,off',
+            'enable_agency_mode' => 'nullable|in:on,off',
             'is_trial' => 'nullable|in:on,off',
             'trial_day' => 'nullable|integer|min:0',
             'is_plan_enable' => 'nullable|in:on,off',
             'is_default' => 'nullable|boolean',
         ]);
-        
+
         // Set default values for nullable fields
         $validated['enable_chatgpt'] = $validated['enable_chatgpt'] ?? 'off';
+        $validated['enable_agency_mode'] = $validated['enable_agency_mode'] ?? 'off';
         $validated['is_trial'] = $validated['is_trial'] ?? null;
         $validated['is_plan_enable'] = $validated['is_plan_enable'] ?? 'on';
         $validated['is_default'] = $validated['is_default'] ?? false;
@@ -225,7 +229,15 @@ class PlanController extends Controller
         
         // Update the plan
         $plan->update($validated);
-        
+
+        // Re-sync agency mode for every workspace whose company is on this plan,
+        // so toggling the plan flag immediately reflects on existing subscribers.
+        $isAgency = ($validated['enable_agency_mode'] === 'on');
+        $companyIds = \App\Models\User::where('plan_id', $plan->id)->pluck('id');
+        if ($companyIds->isNotEmpty()) {
+            \App\Models\Workspace::whereIn('owner_id', $companyIds)->update(['is_agency_mode' => $isAgency]);
+        }
+
         return redirect()->route('plans.index')->with('success', __('Plan updated successfully.'));
     }
     

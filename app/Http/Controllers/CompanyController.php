@@ -303,9 +303,14 @@ class CompanyController extends Controller
         
         // Set plan is active
         $company->plan_is_active = 1;
-        
+
         $company->save();
-        
+
+        // Agency mode follows the plan: enable/disable the digital-agency
+        // features for this company's workspaces based on the assigned plan.
+        $isAgency = (($plan->enable_agency_mode ?? 'off') === 'on');
+        Workspace::where('owner_id', $company->id)->update(['is_agency_mode' => $isAgency]);
+
         return back()->with('success', __('Plan upgraded successfully'));
     }
     
