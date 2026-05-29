@@ -786,4 +786,144 @@ class ProjectController extends Controller
 
         return back()->with('success', 'Project progress has been recalculated.');
     }
+
+    /**
+     * CSV columns for both export and import. admin_password is plaintext —
+     * decrypted on export and re-encrypted on import, so credentials survive
+     * an APP_KEY change between environments.
+     */
+    public const CSV_COLUMNS = [
+        'title', 'description', 'status', 'priority', 'start_date', 'deadline',
+        'estimated_hours', 'budget', 'progress', 'live_url', 'staging_url',
+        'admin_username', 'admin_password', 'ga4_property_id', 'gsc_site_url',
+        'gbp_location_id', 'lead_event_name', 'business_phone', 'is_public',
+    ];
+
+    public function importExportPage()
+    {
+        $this->authorizePermission('project_view_any');
+        $workspace = auth()->user()->currentWorkspace;
+        abort_unless($workspace, 403);
+        $count = Project::forWorkspace($workspace->id)->count();
+
+        return view('projects.import-export', compact('workspace', 'count'));
+    }
+
+    public function exportCsv()
+    {
+        $this->authorizePermission('project_view_any');
+        $workspace = auth()->user()->currentWorkspace;
+        abort_unless($workspace, 403);
+
+        $projects = Project::forWorkspace($workspace->id)->orderBy('title')->get();
+        $filename = 'projects-ws' . $workspace->id . '-' . now()->format('Y-m-d') . '.csv';
+
+        return response()->streamDownload(function () use ($projects) {
+            $out = fopen('php://output', 'w');
+            fputcsv($out, self::CSV_COLUMNS);
+            foreach ($projects as $p) {
+                try {
+                    $password = (string) $p->admin_password_enc; // cast decrypts
+                } catch (\Throwable $e) {
+                    $password = '';
+                }
+                fputcsv($out, [
+                    $p->title,
+                    $p->description,
+                    $p->status,
+                    $p->priority,
+                    optional($p->start_date)->format('Y-m-d'),
+                    optional($p->deadline)->format('Y-m-d'),
+                    $p->estimated_hours,
+                    $p->budget,
+                    $p->progress,
+                    $p->live_url,
+                    $p->staging_url,
+                    $p->admin_username,
+                    $password,
+                    $p->ga4_property_id,
+                    $p->gsc_site_url,
+                    $p->gbp_location_id,
+                    $p->lead_event_name,
+                    $p->business_phone,
+                    $p->is_public ? 1 : 0,
+                ]);
+            }
+            fclose($out);
+        }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
+    public function importCsv(Request $request)
+    {
+        $this->authorizePermission('project_create');
+        $user = auth()->user();
+        $workspace = $user->currentWorkspace;
+        abort_unless($workspace, 403);
+
+        $request->validate(['file' => 'required|file|mimes:csv,txt|max:10240']);
+
+        $handle = fopen($request->file('file')->getRealPath(), 'r');
+        if (!$handle) {
+            return back()->withErrors(['file' => 'Could not open the uploaded file.']);
+        }
+
+        $header = fgetcsv($handle);
+        if (!$header) {
+            fclose($handle);
+            return back()->withErrors(['file' => 'The file appears to be empty.']);
+        }
+        $header = array_map(fn ($h) => strtolower(trim((string) $h)), $header);
+
+        $validStatus   = ['planning', 'active', 'on_hold', 'completed', 'cancelled'];
+        $validPriority = ['low', 'medium', 'high', 'urgent'];
+        $created = 0; $updated = 0; $skipped = 0;
+
+        while (($row = fgetcsv($handle)) !== false) {
+            if (count(array_filter($row, fn ($v) => $v !== null && $v !== '')) === 0) {
+                continue; // blank line
+            }
+            $data  = array_combine($header, array_pad($row, count($header), null));
+            $title = trim((string) ($data['title'] ?? ''));
+            if ($title === '') { $skipped++; continue; }
+
+            $attrs = [
+                'description'     => $data['description'] ?? null,
+                'status'          => in_array($data['status'] ?? '', $validStatus, true) ? $data['status'] : 'planning',
+                'priority'        => in_array($data['priority'] ?? '', $validPriority, true) ? $data['priority'] : 'medium',
+                'start_date'      => !empty($data['start_date']) ? \Illuminate\Support\Carbon::parse($data['start_date']) : null,
+                'deadline'        => !empty($data['deadline']) ? \Illuminate\Support\Carbon::parse($data['deadline']) : null,
+                'estimated_hours' => is_numeric($data['estimated_hours'] ?? null) ? (int) $data['estimated_hours'] : null,
+                'budget'          => is_numeric($data['budget'] ?? null) ? $data['budget'] : null,
+                'progress'        => is_numeric($data['progress'] ?? null) ? (int) $data['progress'] : 0,
+                'live_url'        => $data['live_url'] ?? null,
+                'staging_url'     => $data['staging_url'] ?? null,
+                'admin_username'  => $data['admin_username'] ?? null,
+                'ga4_property_id' => $data['ga4_property_id'] ?? null,
+                'gsc_site_url'    => $data['gsc_site_url'] ?? null,
+                'gbp_location_id' => $data['gbp_location_id'] ?? null,
+                'lead_event_name' => $data['lead_event_name'] ?? null,
+                'business_phone'  => $data['business_phone'] ?? null,
+                'is_public'       => in_array(strtolower((string) ($data['is_public'] ?? '')), ['1', 'true', 'yes'], true),
+            ];
+            if (!empty($data['admin_password'])) {
+                $attrs['admin_password_enc'] = $data['admin_password']; // cast re-encrypts
+            }
+
+            $existing = Project::forWorkspace($workspace->id)->where('title', $title)->first();
+            if ($existing) {
+                $existing->update($attrs + ['updated_by' => $user->id]);
+                $updated++;
+            } else {
+                Project::create($attrs + [
+                    'workspace_id' => $workspace->id,
+                    'title'        => $title,
+                    'created_by'   => $user->id,
+                ]);
+                $created++;
+            }
+        }
+        fclose($handle);
+
+        return back()->with('status', "Import complete: {$created} created, {$updated} updated, {$skipped} skipped.");
+    }
 }
