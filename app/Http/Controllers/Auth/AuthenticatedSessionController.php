@@ -40,7 +40,18 @@ class AuthenticatedSessionController extends Controller
             return redirect()->route('verification.notice');
         }
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        // If the saved "intended" URL is a background/AJAX endpoint (e.g. the
+        // timer poller hits /timer/status while the session is lapsed and it
+        // gets stored as intended), don't redirect there — Inertia can't render
+        // its JSON. Fall back to the dashboard for those.
+        $dashboard = route('dashboard', absolute: false);
+        $intended  = $request->session()->pull('url.intended', $dashboard);
+        $path      = parse_url($intended, PHP_URL_PATH) ?? '';
+        if (preg_match('#(timer/status|/status$|\.json$)#', $path)) {
+            $intended = $dashboard;
+        }
+
+        return redirect($intended);
     }
 
     /**
