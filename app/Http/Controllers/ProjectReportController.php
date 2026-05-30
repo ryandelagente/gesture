@@ -74,10 +74,24 @@ class ProjectReportController extends Controller
         $prevMonth = (clone $start)->subMonth()->format('Y-m');
         $nextMonth = (clone $start)->addMonth()->format('Y-m');
 
-        return view('project-reports.show', compact(
+        // Pick the report variant based on the project's service types.
+        // Pure web/content (no SEO) projects get the agency web report;
+        // any project that includes SEO keeps the SEO-focused report.
+        $view = $this->isSeoProject($project) ? 'project-reports.show' : 'project-reports.show-web';
+
+        return view($view, compact(
             'project', 'start', 'end', 'metrics', 'rankings',
             'doneTasks', 'upcomingTasks', 'prevMonth', 'nextMonth'
         ));
+    }
+
+    /**
+     * True if the project's service-type list includes "SEO".
+     */
+    private function isSeoProject(Project $project): bool
+    {
+        $services = array_filter(array_map('trim', explode(',', (string) $project->description)));
+        return in_array('SEO', $services, true);
     }
 
     public function downloadPdf(Request $request, Project $project)
@@ -113,7 +127,8 @@ class ProjectReportController extends Controller
             ->take(10)
             ->get();
 
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('project-reports.pdf', compact(
+        $view = $this->isSeoProject($project) ? 'project-reports.pdf' : 'project-reports.pdf-web';
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView($view, compact(
             'project', 'start', 'end', 'metrics', 'rankings', 'doneTasks', 'upcomingTasks'
         ))->setPaper('a4');
 
