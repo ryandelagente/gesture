@@ -370,21 +370,52 @@
         </p>
     </section>
 
-    {{-- SECTION 6: WORK WE'VE DONE (auto from completed tasks) --}}
+    {{-- SECTION 6: WORK WE'VE DONE (auto from completed tasks, split by category) --}}
     <section class="report" id="section-6">
         <h2>6. Work we've done</h2>
         <h3>Completed in {{ $start->format('F Y') }}</h3>
-        @if ($doneTasks->isEmpty())
-            <p class="intro" style="color:var(--muted);font-style:italic">No tasks were marked Done in this period yet.</p>
-        @else
+        @php
+            $contentDone = $doneTasks->where('category', 'content')->values();
+            $otherDone   = $doneTasks->whereNotIn('category', ['content'])->values();
+            // pull a URL out of the description if one was pasted in (so client can click through)
+            $extractUrl = function ($text) {
+                if (!$text) return null;
+                if (preg_match('#https?://[^\s<>"\']+#', $text, $m)) return $m[0];
+                return null;
+            };
+        @endphp
+
+        @if ($contentDone->isNotEmpty())
+            <h3 style="margin-top:18px">📝 Content published</h3>
+            <p class="intro" style="margin:0 0 8px">Blog posts and content pages we wrote and published this month.</p>
             <ul class="tasks">
-                @foreach ($doneTasks as $t)
+                @foreach ($contentDone as $t)
+                    @php $url = $extractUrl($t->description); @endphp
+                    <li>
+                        <span>
+                            <span class="check">✓</span> &nbsp;{{ $t->title }}
+                            @if ($url) <a href="{{ $url }}" target="_blank" rel="noopener" style="font-size:11px;color:#2563eb;margin-left:8px">view ↗</a> @endif
+                        </span>
+                        <span class="when">{{ $t->updated_at->format('M j') }}</span>
+                    </li>
+                @endforeach
+            </ul>
+        @endif
+
+        @if ($otherDone->isNotEmpty())
+            <h3 style="margin-top:18px">🛠 Other work delivered</h3>
+            <ul class="tasks">
+                @foreach ($otherDone as $t)
                     <li>
                         <span><span class="check">✓</span> &nbsp;{{ $t->title }}</span>
                         <span class="when">{{ $t->updated_at->format('M j') }}</span>
                     </li>
                 @endforeach
             </ul>
+        @endif
+
+        @if ($doneTasks->isEmpty())
+            <p class="intro" style="color:var(--muted);font-style:italic">No tasks were marked Done in this period yet.</p>
         @endif
     </section>
 

@@ -159,14 +159,41 @@
 <div class="section">
     <div class="eyebrow">6. Work we've done</div>
     <h2>Completed in {{ $start->format('F Y') }}</h2>
-    @if ($doneTasks->isEmpty())
-        <p style="color:#6b7280;font-style:italic">No tasks were marked Done in this period.</p>
-    @else
+    @php
+        $contentDone = $doneTasks->where('category', 'content')->values();
+        $otherDone   = $doneTasks->whereNotIn('category', ['content'])->values();
+        $extractUrl = function ($text) {
+            if (!$text) return null;
+            if (preg_match('#https?://[^\s<>"\']+#', $text, $m)) return $m[0];
+            return null;
+        };
+    @endphp
+
+    @if ($contentDone->isNotEmpty())
+        <h2 style="margin-top:10px;font-size:13px;color:#10b981">Content published</h2>
         <ul class="tasks">
-            @foreach ($doneTasks as $t)
+            @foreach ($contentDone as $t)
+                @php $url = $extractUrl($t->description); @endphp
+                <li>
+                    <span class="check">✓</span>{{ $t->title }}
+                    @if ($url) <span style="font-size:9px;color:#2563eb;margin-left:4px">{{ $url }}</span> @endif
+                    <span class="when">{{ $t->updated_at->format('M j') }}</span>
+                </li>
+            @endforeach
+        </ul>
+    @endif
+
+    @if ($otherDone->isNotEmpty())
+        <h2 style="margin-top:10px;font-size:13px;color:#6b7280">Other work delivered</h2>
+        <ul class="tasks">
+            @foreach ($otherDone as $t)
                 <li><span class="check">✓</span>{{ $t->title }}<span class="when">{{ $t->updated_at->format('M j') }}</span></li>
             @endforeach
         </ul>
+    @endif
+
+    @if ($doneTasks->isEmpty())
+        <p style="color:#6b7280;font-style:italic">No tasks were marked Done in this period.</p>
     @endif
 </div>
 
