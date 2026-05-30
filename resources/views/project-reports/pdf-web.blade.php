@@ -56,7 +56,7 @@
 @endphp
 
 <div class="cover">
-    <div class="badge">Web &amp; content monthly report</div>
+    <div class="badge">Internal agency report</div>
     <h1>{{ $project->title }}</h1>
     <div class="sub">Digital delivery report for <strong>{{ strtoupper($start->format('F Y')) }}</strong></div>
     <div class="meta">

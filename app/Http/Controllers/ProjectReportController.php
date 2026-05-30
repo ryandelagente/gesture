@@ -74,24 +74,45 @@ class ProjectReportController extends Controller
         $prevMonth = (clone $start)->subMonth()->format('Y-m');
         $nextMonth = (clone $start)->addMonth()->format('Y-m');
 
-        // Pick the report variant based on the project's service types.
-        // Pure web/content (no SEO) projects get the agency web report;
-        // any project that includes SEO keeps the SEO-focused report.
-        $view = $this->isSeoProject($project) ? 'project-reports.show' : 'project-reports.show-web';
-
-        return view($view, compact(
+        return view('project-reports.show', compact(
             'project', 'start', 'end', 'metrics', 'rankings',
             'doneTasks', 'upcomingTasks', 'prevMonth', 'nextMonth'
         ));
     }
 
     /**
-     * True if the project's service-type list includes "SEO".
+     * Internal agency report — focused on web/content task delivery and
+     * project ops, for the team. Not the client-facing SEO report.
      */
-    private function isSeoProject(Project $project): bool
+    public function agencyReport(Request $request, Project $project)
     {
-        $services = array_filter(array_map('trim', explode(',', (string) $project->description)));
-        return in_array('SEO', $services, true);
+        $this->authorizeAccess($project);
+
+        $period = $request->get('month');
+        $start  = $period ? Carbon::parse($period)->startOfMonth() : now()->subMonth()->startOfMonth();
+        $end    = (clone $start)->endOfMonth();
+
+        $doneTasks = \App\Models\Task::where('project_id', $project->id)
+            ->whereBetween('updated_at', [$start, $end])
+            ->whereHas('taskStage', fn($q) => $q->where('name', 'Done'))
+            ->orderBy('updated_at')
+            ->get();
+
+        $upcomingTasks = \App\Models\Task::where('project_id', $project->id)
+            ->whereHas('taskStage', fn($q) => $q->whereNotIn('name', ['Done']))
+            ->where(function ($q) use ($end) {
+                $q->whereNull('end_date')->orWhere('end_date', '>=', $end);
+            })
+            ->orderBy('end_date')
+            ->take(15)
+            ->get();
+
+        $prevMonth = (clone $start)->subMonth()->format('Y-m');
+        $nextMonth = (clone $start)->addMonth()->format('Y-m');
+
+        return view('project-reports.show-web', compact(
+            'project', 'start', 'end', 'doneTasks', 'upcomingTasks', 'prevMonth', 'nextMonth'
+        ));
     }
 
     public function downloadPdf(Request $request, Project $project)
@@ -127,13 +148,48 @@ class ProjectReportController extends Controller
             ->take(10)
             ->get();
 
-        $view = $this->isSeoProject($project) ? 'project-reports.pdf' : 'project-reports.pdf-web';
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView($view, compact(
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('project-reports.pdf', compact(
             'project', 'start', 'end', 'metrics', 'rankings', 'doneTasks', 'upcomingTasks'
         ))->setPaper('a4');
 
         $safeTitle = preg_replace('/[^A-Za-z0-9_\- ]/', '', $project->title);
         $filename  = trim($safeTitle) . ' - ' . $start->format('Y-m') . '.pdf';
+
+        return $pdf->download($filename);
+    }
+
+    /**
+     * PDF version of the internal agency report.
+     */
+    public function downloadAgencyPdf(Request $request, Project $project)
+    {
+        $this->authorizeAccess($project);
+
+        $period = $request->get('month');
+        $start  = $period ? Carbon::parse($period)->startOfMonth() : now()->subMonth()->startOfMonth();
+        $end    = (clone $start)->endOfMonth();
+
+        $doneTasks = \App\Models\Task::where('project_id', $project->id)
+            ->whereBetween('updated_at', [$start, $end])
+            ->whereHas('taskStage', fn($q) => $q->where('name', 'Done'))
+            ->orderBy('updated_at')
+            ->get();
+
+        $upcomingTasks = \App\Models\Task::where('project_id', $project->id)
+            ->whereHas('taskStage', fn($q) => $q->whereNotIn('name', ['Done']))
+            ->where(function ($q) use ($end) {
+                $q->whereNull('end_date')->orWhere('end_date', '>=', $end);
+            })
+            ->orderBy('end_date')
+            ->take(15)
+            ->get();
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('project-reports.pdf-web', compact(
+            'project', 'start', 'end', 'doneTasks', 'upcomingTasks'
+        ))->setPaper('a4');
+
+        $safeTitle = preg_replace('/[^A-Za-z0-9_\- ]/', '', $project->title);
+        $filename  = trim($safeTitle) . ' - agency - ' . $start->format('Y-m') . '.pdf';
 
         return $pdf->download($filename);
     }

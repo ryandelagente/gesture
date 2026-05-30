@@ -59,11 +59,12 @@
         <div style="font-size:12px;color:var(--muted)">{{ $start->format('F Y') }} · Web &amp; content delivery</div>
     </div>
     <div class="nav">
-        <a href="{{ url('/projects/' . $project->id . '/reports?month=' . $prevMonth) }}">← {{ \Carbon\Carbon::parse($prevMonth)->format('M Y') }}</a>
+        <a href="{{ url('/projects/' . $project->id . '/agency-report?month=' . $prevMonth) }}">← {{ \Carbon\Carbon::parse($prevMonth)->format('M Y') }}</a>
         <a href="#" class="current">{{ $start->format('M Y') }}</a>
-        <a href="{{ url('/projects/' . $project->id . '/reports?month=' . $nextMonth) }}">{{ \Carbon\Carbon::parse($nextMonth)->format('M Y') }} →</a>
-        <a href="{{ url('/projects/' . $project->id . '/reports.pdf?month=' . $start->format('Y-m')) }}" title="Download PDF">📄 Download PDF</a>
+        <a href="{{ url('/projects/' . $project->id . '/agency-report?month=' . $nextMonth) }}">{{ \Carbon\Carbon::parse($nextMonth)->format('M Y') }} →</a>
+        <a href="{{ url('/projects/' . $project->id . '/agency-report.pdf?month=' . $start->format('Y-m')) }}" title="Download PDF">📄 Download PDF</a>
         <a href="javascript:window.print()" title="Print">🖨 Print</a>
+        <a href="{{ url('/projects/' . $project->id . '/reports?month=' . $start->format('Y-m')) }}" title="Client SEO report" style="background:#dbeafe;border-color:#60a5fa;color:#1e40af">👤 Client view</a>
         <a href="{{ url('/projects/' . $project->id) }}">Back to project</a>
     </div>
 </header>
@@ -87,7 +88,7 @@
 
     {{-- COVER --}}
     <div class="cover">
-        <div class="badge">Web &amp; content monthly report</div>
+        <div class="badge">🔒 Internal agency report</div>
         <h2>{{ $project->title }}</h2>
         <p class="sub">Digital delivery report for <strong>{{ strtoupper($start->format('F Y')) }}</strong></p>
         <div class="meta">

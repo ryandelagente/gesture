@@ -462,6 +462,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('reports', [\App\Http\Controllers\ProjectReportController::class, 'index'])->middleware('permission:project_view_any')->name('reports.index');
         Route::get('projects/{project}/reports', [\App\Http\Controllers\ProjectReportController::class, 'show'])->middleware('permission:project_view')->name('projects.reports.show');
         Route::get('projects/{project}/reports.pdf', [\App\Http\Controllers\ProjectReportController::class, 'downloadPdf'])->middleware('permission:project_view')->name('projects.reports.pdf');
+        Route::get('projects/{project}/agency-report', [\App\Http\Controllers\ProjectReportController::class, 'agencyReport'])->middleware('permission:project_view')->name('projects.reports.agency');
+        Route::get('projects/{project}/agency-report.pdf', [\App\Http\Controllers\ProjectReportController::class, 'downloadAgencyPdf'])->middleware('permission:project_view')->name('projects.reports.agency-pdf');
         Route::post('projects/{project}/reports', [\App\Http\Controllers\ProjectReportController::class, 'saveMetrics'])->middleware('permission:project_update')->name('projects.reports.save');
         Route::post('projects/{project}/reports/sync-ga4', [\App\Http\Controllers\ProjectReportController::class, 'syncGa4'])->middleware('permission:project_update')->name('projects.reports.sync-ga4');
         Route::post('projects/{project}/reports/sync-gsc', [\App\Http\Controllers\ProjectReportController::class, 'syncGsc'])->middleware('permission:project_update')->name('projects.reports.sync-gsc');

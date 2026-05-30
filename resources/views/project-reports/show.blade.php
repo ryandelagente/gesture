@@ -113,6 +113,7 @@
         <a href="{{ url('/projects/' . $project->id . '/reports?month=' . $nextMonth) }}">{{ Carbon\Carbon::parse($nextMonth)->format('M Y') }} →</a>
         <a href="{{ url('/projects/' . $project->id . '/reports.pdf?month=' . $start->format('Y-m')) }}" title="Download PDF">📄 Download PDF</a>
         <a href="javascript:window.print()" title="Print">🖨 Print</a>
+        <a href="{{ url('/projects/' . $project->id . '/agency-report?month=' . $start->format('Y-m')) }}" title="Internal agency report" style="background:#fef3c7;border-color:#fbbf24;color:#92400e">🔒 Agency view</a>
         <a href="{{ url('/projects/' . $project->id) }}">Back to project</a>
     </div>
 </header>
