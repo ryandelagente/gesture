@@ -28,6 +28,7 @@ export default function TaskFormModal({ isOpen, onClose, task, projects, members
         title: task?.title || '',
         description: task?.description || '',
         priority: task?.priority || 'medium',
+        category: task?.category || 'general',
         start_date: task?.start_date || '',
         end_date: task?.end_date || '',
         assigned_to: task?.assigned_to?.id?.toString() || 'none'
@@ -51,6 +52,7 @@ export default function TaskFormModal({ isOpen, onClose, task, projects, members
                 title: task.title,
                 description: task.description || '',
                 priority: task.priority,
+                category: (task as any).category || 'general',
                 start_date: task.start_date?.split('T')[0] || '',
                 end_date: task.end_date?.split('T')[0] || '',
                 assigned_to: task.assigned_to?.id?.toString() || 'none'
@@ -63,6 +65,7 @@ export default function TaskFormModal({ isOpen, onClose, task, projects, members
                 title: '',
                 description: '',
                 priority: 'medium',
+                category: 'general',
                 start_date: '',
                 end_date: '',
                 assigned_to: 'none'
@@ -197,6 +200,22 @@ export default function TaskFormModal({ isOpen, onClose, task, projects, members
                             placeholder={t('Describe the task...')}
                             rows={3}
                         />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                            {t('Type')}
+                        </label>
+                        <Select value={formData.category} onValueChange={(value) => setFormData({...formData, category: value})}>
+                            <SelectTrigger>
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="z-[9999]">
+                                <SelectItem value="web">{t('Web Task')}</SelectItem>
+                                <SelectItem value="content">{t('Content Task')}</SelectItem>
+                                <SelectItem value="general">{t('General')}</SelectItem>
+                            </SelectContent>
+                        </Select>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">

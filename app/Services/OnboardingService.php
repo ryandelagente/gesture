@@ -31,9 +31,18 @@ class OnboardingService
         $createdById = $byUserId ?? $project->created_by ?? 1;
         $created = 0;
 
+        // Map each service-type template to a task category so the cross-project
+        // overview ("Content Tasks") can split work between web build vs. content.
+        $categoryMap = [
+            'Web Development' => 'web',
+            'SEO'             => 'content',
+            'Google Ads'      => 'general',
+        ];
+
         foreach ($serviceTypes as $serviceType) {
             $template = $templates[$serviceType] ?? null;
             if (!$template) continue;
+            $defaultCategory = $categoryMap[$serviceType] ?? 'general';
 
             foreach ($template as $i => $row) {
                 if (in_array($row['title'], $existing, true)) continue;
@@ -44,6 +53,7 @@ class OnboardingService
                     'title'         => $row['title'],
                     'description'   => $row['description'] ?? null,
                     'priority'      => $row['priority'] ?? 'medium',
+                    'category'      => $row['category'] ?? $defaultCategory,
                     'start_date'    => $startDate,
                     'end_date'      => (clone $startDate)->addDays($offset),
                     'progress'      => 0,

@@ -13,7 +13,7 @@ class Task extends Model
     use LogsActivity;
     protected $fillable = [
         'project_id', 'task_stage_id', 'milestone_id', 'title', 'description',
-        'priority', 'start_date', 'end_date', 'assigned_to', 'created_by', 'progress'
+        'priority', 'category', 'start_date', 'end_date', 'assigned_to', 'created_by', 'progress'
     ];
 
     protected $casts = [

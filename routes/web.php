@@ -455,6 +455,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::put('projects/{project}/progress', [\App\Http\Controllers\ProjectController::class, 'updateProgress'])->middleware('permission:project_track_progress')->name('projects.update-progress');
         Route::post('projects/{project}/recalculate-progress', [\App\Http\Controllers\ProjectController::class, 'recalculateProgress'])->middleware('permission:project_track_progress')->name('projects.recalculate-progress');
         Route::post('projects/{project}/apply-onboarding', [\App\Http\Controllers\ProjectController::class, 'applyOnboarding'])->middleware('permission:project_update')->name('projects.apply-onboarding');
+        Route::get('tasks-overview', [\App\Http\Controllers\TaskController::class, 'overview'])->middleware('permission:task_view_any')->name('tasks.overview');
         Route::get('projects-tools', [\App\Http\Controllers\ProjectController::class, 'importExportPage'])->middleware('permission:project_view_any')->name('projects.tools');
         Route::get('projects-tools/export', [\App\Http\Controllers\ProjectController::class, 'exportCsv'])->middleware('permission:project_view_any')->name('projects.export');
         Route::post('projects-tools/import', [\App\Http\Controllers\ProjectController::class, 'importCsv'])->middleware('permission:project_create')->name('projects.import');

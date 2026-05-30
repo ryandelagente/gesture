@@ -215,11 +215,13 @@ class TaskController extends Controller
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
             'priority' => 'required|in:low,medium,high,critical',
+            'category' => 'nullable|in:web,content,general',
             'start_date' => 'nullable|date',
             'end_date' => 'nullable|date|after:start_date',
             'assigned_to' => 'nullable|exists:users,id'
         ]);
-        
+        $validated['category'] = $validated['category'] ?? 'general';
+
         // Ensure project belongs to current workspace
         $project = Project::find($validated['project_id']);
         if (!$project || $project->workspace_id !== $workspace->id) {
@@ -255,6 +257,7 @@ class TaskController extends Controller
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
             'priority' => 'required|in:low,medium,high,critical',
+            'category' => 'nullable|in:web,content,general',
             'start_date' => 'nullable|date',
             'end_date' => 'nullable|date|after:start_date',
             'assigned_to' => 'nullable|exists:users,id',
@@ -328,5 +331,43 @@ class TaskController extends Controller
         $task->update($validated);
 
         return back()->with('success', __('Task stage updated successfully!'));
+    }
+
+    /**
+     * Cross-project task overview filtered by category (web / content / general).
+     * Useful for agencies that want to see all content tasks across their
+     * client projects, or all web-build tasks, in one place.
+     */
+    public function overview(Request $request)
+    {
+        $this->authorizePermission('task_view_any');
+        $user = auth()->user();
+        $workspace = $user->currentWorkspace;
+        abort_unless($workspace, 403);
+
+        $category = $request->get('category', 'content');
+        $valid    = ['web', 'content', 'general', 'all'];
+        if (!in_array($category, $valid, true)) {
+            $category = 'content';
+        }
+
+        $query = Task::query()
+            ->whereHas('project', fn ($q) => $q->where('workspace_id', $workspace->id))
+            ->with(['project:id,title', 'taskStage:id,name', 'assignedTo:id,name'])
+            ->orderBy('end_date');
+
+        if ($category !== 'all') {
+            $query->where('category', $category);
+        }
+
+        $tasks = $query->limit(500)->get();
+
+        $counts = Task::query()
+            ->whereHas('project', fn ($q) => $q->where('workspace_id', $workspace->id))
+            ->selectRaw('category, count(*) as c')
+            ->groupBy('category')
+            ->pluck('c', 'category');
+
+        return view('tasks.overview', compact('tasks', 'category', 'counts', 'workspace'));
     }
 }
