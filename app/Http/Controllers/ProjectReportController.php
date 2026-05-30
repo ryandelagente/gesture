@@ -32,7 +32,9 @@ class ProjectReportController extends Controller
             ->get()
             ->groupBy('project_id');
 
-        return view('project-reports.index', compact('projects', 'latest', 'search'));
+        $view = $request->get('view') === 'agency' ? 'agency' : 'client';
+
+        return view('project-reports.index', compact('projects', 'latest', 'search', 'view'));
     }
 
     public function show(Request $request, Project $project)

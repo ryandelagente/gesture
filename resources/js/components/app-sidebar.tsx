@@ -109,12 +109,15 @@ export function AppSidebar() {
             });
         }
 
-        // Monthly Reports (agency mode only)
+        // Monthly Reports (agency mode only) — split into client-facing and internal agency views.
         if (isAgencyMode && hasPermission(permissions, 'project_view_any')) {
             items.push({
                 title: t('Reports'),
                 icon: BarChart,
-                href: route('reports.index'),
+                children: [
+                    { title: t('Client Report'), href: route('reports.index') },
+                    { title: t('Agency Report'), href: route('reports.index') + '?view=agency' },
+                ],
             });
         }
 

@@ -42,12 +42,17 @@
 </head>
 <body>
 <header>
-    <h1>📊 Monthly Reports</h1>
+    <h1>📊 Monthly Reports — {{ $view === 'agency' ? 'Agency (internal)' : 'Client' }}</h1>
     <a href="{{ url('/dashboard') }}">&larr; Dashboard</a>
 </header>
 
 <div class="wrap">
+    <div style="display:flex;gap:8px;margin:0 0 14px;font-size:13px">
+        <a href="{{ url('/reports') }}" style="padding:6px 12px;border-radius:6px;text-decoration:none;{{ $view === 'client' ? 'background:#10b981;color:#fff' : 'background:#fff;border:1px solid #e5e7eb;color:#374151' }}">👤 Client report</a>
+        <a href="{{ url('/reports?view=agency') }}" style="padding:6px 12px;border-radius:6px;text-decoration:none;{{ $view === 'agency' ? 'background:#f59e0b;color:#fff' : 'background:#fff;border:1px solid #e5e7eb;color:#374151' }}">🔒 Agency report</a>
+    </div>
     <form class="toolbar" method="GET">
+        @if ($view === 'agency')<input type="hidden" name="view" value="agency">@endif
         <input type="search" name="q" placeholder="Search projects…" value="{{ $search }}">
         <button type="submit">Search</button>
         <span class="count">{{ $projects->count() }} project{{ $projects->count() === 1 ? '' : 's' }}</span>
@@ -113,7 +118,7 @@
                         <td>{!! $sources->contains('gsc') ? '<span style="color:#16a34a;font-size:16px">✓</span>' : '<span class="last">—</span>' !!}</td>
                         <td>{!! $sources->contains('gbp') ? '<span style="color:#16a34a;font-size:16px">✓</span>' : '<span class="last">—</span>' !!}</td>
                         <td class="actions">
-                            <a href="{{ url('/projects/' . $p->id . '/reports') }}">Open report →</a>
+                            <a href="{{ url('/projects/' . $p->id . ($view === 'agency' ? '/agency-report' : '/reports')) }}">Open report →</a>
                         </td>
                     </tr>
                 @endforeach
