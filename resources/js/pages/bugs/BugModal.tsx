@@ -208,6 +208,23 @@ export function BugModal({ bug, projects, statuses, members, onClose, permission
                     </TabsList>
 
                     <TabsContent value="details" className="space-y-4">
+                        {/* Widget screenshot — admin-only, captured at submission time */}
+                        {(bugData as any)?.screenshot_path && (
+                            <div className="border border-gray-200 rounded-lg overflow-hidden">
+                                <div className="flex items-center justify-between px-3 py-2 bg-gray-50 text-xs text-gray-600">
+                                    <span>📸 Widget screenshot</span>
+                                    <a href={`/storage/${(bugData as any).screenshot_path}`} target="_blank" rel="noopener" className="text-blue-600 hover:underline">Open full size ↗</a>
+                                </div>
+                                <a href={`/storage/${(bugData as any).screenshot_path}`} target="_blank" rel="noopener">
+                                    <img
+                                        src={`/storage/${(bugData as any).screenshot_path}`}
+                                        alt="Bug screenshot"
+                                        className="w-full max-h-96 object-contain bg-gray-100"
+                                        loading="lazy"
+                                    />
+                                </a>
+                            </div>
+                        )}
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
