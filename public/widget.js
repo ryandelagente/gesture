@@ -18,6 +18,29 @@
     return s[s.length - 1];
   })();
 
+  // Team-only gating: on the agency's own sites the widget is hidden from
+  // logged-out / public visitors. Team members visit the page once with ?gf=1
+  // to unlock it (persisted via localStorage). Use ?gf=0 to disable again.
+  //
+  // Triggered by either:
+  //   • data-team-only="true"  on the embed script tag, OR
+  //   • the page hostname matches a known agency domain (wehelptradies.com.au
+  //     and its subdomains). Client sites that embed the widget for public
+  //     feedback are unaffected.
+  try {
+    var qs = new URLSearchParams(location.search);
+    if (qs.get('gf') === '1') localStorage.setItem('gesture.feedback.enabled', '1');
+    if (qs.get('gf') === '0') localStorage.removeItem('gesture.feedback.enabled');
+
+    var attrTeamOnly = scriptEl && scriptEl.getAttribute('data-team-only') === 'true';
+    var hostTeamOnly = /(^|\.)wehelptradies\.com\.au$/i.test(location.hostname || '');
+    var teamOnly = attrTeamOnly || hostTeamOnly;
+
+    if (teamOnly && localStorage.getItem('gesture.feedback.enabled') !== '1') {
+      return; // public visitor on an agency-owned site — don't render
+    }
+  } catch (e) { /* localStorage may be unavailable; fail open and render */ }
+
   var WIDGET_KEY = (scriptEl && scriptEl.getAttribute('data-key')) || '';
   if (!WIDGET_KEY) {
     console.warn('[Gesture-widget] missing data-key attribute');
