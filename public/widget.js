@@ -766,6 +766,7 @@
       + '<div class="sp"></div>'
       + '<button data-tool="rect" title="Rectangle">▭ Rect</button>'
       + '<button data-tool="arrow" title="Arrow">↗ Arrow</button>'
+      + '<button data-tool="text" title="Text label">T Text</button>'
       + '<button data-tool="blur" title="Blur sensitive">🌫 Blur</button>'
       + '<div class="sp"></div>'
       + '<button data-act="undo" title="Undo last">↶ Undo</button>';
@@ -819,8 +820,37 @@
     }
     function startDrag(p) {
       if (tool === 'none') return;
+      if (tool === 'text') {
+        var label = window.prompt('Add text label:', '');
+        if (label == null) return;
+        label = String(label).trim();
+        if (!label) return;
+        history.push(ctx.getImageData(0, 0, work.width, work.height));
+        drawTextLabel(p.x, p.y, label);
+        return; // single-click, no drag
+      }
       history.push(ctx.getImageData(0, 0, work.width, work.height));
       drag = { start: p, snap: ctx.getImageData(0, 0, work.width, work.height) };
+    }
+    function drawTextLabel(x, y, text) {
+      var fontSize = 22;
+      ctx.font = 'bold ' + fontSize + 'px Arial, "Segoe UI", sans-serif';
+      ctx.textBaseline = 'top';
+      var padX = 10, padY = 6;
+      var w = ctx.measureText(text).width + padX * 2;
+      var h = fontSize + padY * 2;
+      // background pill
+      ctx.fillStyle = '#ef4444';
+      if (typeof ctx.roundRect === 'function') {
+        ctx.beginPath();
+        ctx.roundRect(x, y, w, h, 6);
+        ctx.fill();
+      } else {
+        ctx.fillRect(x, y, w, h);
+      }
+      // text on top
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText(text, x + padX, y + padY);
     }
     function moveDrag(p) {
       if (!drag) return;
