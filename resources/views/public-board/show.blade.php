@@ -75,9 +75,8 @@
                         @if ($bug->description)
                             <div class="desc">{{ \Illuminate\Support\Str::limit($bug->description, 220) }}</div>
                         @endif
-                        @if ($board->show_screenshots && $bug->screenshot_path)
-                            <div class="thumb"><img src="{{ asset('storage/' . $bug->screenshot_path) }}" alt=""></div>
-                        @endif
+                        {{-- Screenshots & attachments are intentionally hidden on the public board.
+                             They remain visible to admins/team in the internal Bugs list. --}}
                     </div>
                 @endforeach
             </div>

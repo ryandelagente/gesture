@@ -276,19 +276,35 @@ class BugWidgetController extends Controller
     private function storeScreenshot(string $dataUri, int $keyId): ?string
     {
         if (!preg_match('#^data:image/(png|jpe?g);base64,(.+)$#i', $dataUri, $m)) {
+            \Log::warning('Widget screenshot rejected: not a valid data URI', ['key_id' => $keyId, 'sample' => substr($dataUri, 0, 60)]);
             return null;
         }
         $ext = strtolower($m[1]) === 'jpg' ? 'jpeg' : strtolower($m[1]);
         $bytes = base64_decode($m[2], true);
         if ($bytes === false) {
+            \Log::warning('Widget screenshot rejected: base64 decode failed', ['key_id' => $keyId]);
             return null;
         }
-        if (strlen($bytes) > 8 * 1024 * 1024) {
+        // Allow up to 24 MB — annotated full-page screenshots commonly exceed
+        // the previous 8 MB cap. The PHP-level post_max_size still bounds the
+        // overall request, so this is the upper bound for what we'll accept.
+        $maxBytes = 24 * 1024 * 1024;
+        if (strlen($bytes) > $maxBytes) {
+            \Log::warning('Widget screenshot rejected: too large', [
+                'key_id'  => $keyId,
+                'size_kb' => intval(strlen($bytes) / 1024),
+                'max_kb'  => intval($maxBytes / 1024),
+            ]);
             return null;
         }
-        $relative = 'bug-widget-screenshots/' . $keyId . '/' . Str::uuid()->toString() . '.' . $ext;
-        Storage::disk('public')->put($relative, $bytes);
-        return $relative;
+        try {
+            $relative = 'bug-widget-screenshots/' . $keyId . '/' . Str::uuid()->toString() . '.' . $ext;
+            Storage::disk('public')->put($relative, $bytes);
+            return $relative;
+        } catch (\Throwable $e) {
+            \Log::error('Widget screenshot save failed', ['key_id' => $keyId, 'error' => $e->getMessage()]);
+            return null;
+        }
     }
 
     private function spamHeuristicReason(string $text): ?string
