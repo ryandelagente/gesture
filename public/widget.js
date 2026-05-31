@@ -32,8 +32,13 @@
     if (qs.get('gf') === '1') localStorage.setItem('gesture.feedback.enabled', '1');
     if (qs.get('gf') === '0') localStorage.removeItem('gesture.feedback.enabled');
 
+    var hostname = (location.hostname || '').toLowerCase();
     var attrTeamOnly = scriptEl && scriptEl.getAttribute('data-team-only') === 'true';
-    var hostTeamOnly = /(^|\.)wehelptradies\.com\.au$/i.test(location.hostname || '');
+    // Gate the public marketing site, but never gate the admin/tracker
+    // subdomain — staff are the only visitors there.
+    var isAgencyDomain = /(^|\.)wehelptradies\.com\.au$/.test(hostname);
+    var isAdminTracker = hostname.indexOf('tracker.') === 0;
+    var hostTeamOnly = isAgencyDomain && !isAdminTracker;
     var teamOnly = attrTeamOnly || hostTeamOnly;
 
     if (teamOnly && localStorage.getItem('gesture.feedback.enabled') !== '1') {
