@@ -41,7 +41,11 @@
     var hostTeamOnly = isAgencyDomain && !isAdminTracker;
     var teamOnly = attrTeamOnly || hostTeamOnly;
 
-    if (teamOnly && localStorage.getItem('gesture.feedback.enabled') !== '1') {
+    // Auto-unlock for logged-in WordPress users — WP adds the `admin-bar`
+    // class to <body> for any signed-in user. No manual flag needed for them.
+    var wpLoggedIn = document.body && document.body.classList && document.body.classList.contains('admin-bar');
+
+    if (teamOnly && !wpLoggedIn && localStorage.getItem('gesture.feedback.enabled') !== '1') {
       return; // public visitor on an agency-owned site — don't render
     }
   } catch (e) { /* localStorage may be unavailable; fail open and render */ }
